@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ClimaGil</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+        header {
+            background-color: #003366;
+            color: white;
+            padding: 10px 0;
+            text-align: center;
+        }
+        header img {
+            height: 130px; /* Aumenta o tamanho da logo "Gil" */
+            margin: 10px;
+        }
+        h1 {
+            margin: 0;
+        }
+        .container {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin: 20px;
+        }
+        .unidade-card {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            margin: 10px;
+            padding: 20px;
+            text-align: center;
+            width: 250px;
+            transition: background-color 0.3s ease;
+        }
+        .alerta {
+            font-weight: bold;
+            padding: 5px;
+            border-radius: 4px;
+            display: inline-block;
+        }
+        .alerta.verde {
+            background-color: #ccffcc; /* Verde */
+            color: #006600;
+        }
+        .alerta.vermelho {
+            background-color: #ffcccc; /* Vermelho */
+            color: #990000;
+        }
+        footer {
+            background-color: white;
+            padding: 10px;
+            text-align: center;
+        }
+        footer img {
+            height: 70px; /* Aumenta o tamanho da logo "Inovagil" */
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <img src="gil.png" alt="Logo ETE">
+    <h1>ClimaGil</h1>
+</header>
+
+<div class="container" id="unidades-container">
+    <!-- Os cards das unidades serão inseridos aqui pelo JavaScript -->
+</div>
+
+<footer>
+    <img src="inovagil.jpeg" alt="Logo Inovagil">
+</footer>
+
+<script>
+    // Função para obter as unidades da API
+    async function fetchUnidades() {
+        try {
+            const response = await fetch('http://localhost:3000/unidades');
+            const unidades = await response.json();
+            displayUnidades(unidades);
+        } catch (error) {
+            console.error("Erro ao buscar unidades:", error);
+        }
+    }
+
+    // Função para exibir as unidades na página
+    function displayUnidades(unidades) {
+        const container = document.getElementById('unidades-container');
+        container.innerHTML = ''; // Limpa o container
+
+        unidades.forEach(unidade => {
+            const card = document.createElement('div');
+            card.classList.add('unidade-card');
+
+            // Preenche o card com os dados da unidade
+            card.innerHTML = `
+                <h2>${unidade.nome}</h2>
+                <div class="valores">
+                    <p><strong>Temperatura:</strong> ${unidade.temperatura}°C</p>
+                    <p><strong>Umidade:</strong> ${unidade.umidade}%</p>
+                    <p><strong>Luminosidade:</strong> ${unidade.luminosidade} lux</p>
+                </div>
+                <div class="alertas">
+                    <p><strong>Alerta Temperatura:</strong> <span class="alerta ${unidade.alerta_temperatura ? 'vermelho' : 'verde'}">
+                        ${unidade.alerta_temperatura ? 'Alerta!' : 'Normal'}
+                    </span></p>
+                    <p><strong>Alerta Umidade:</strong> <span class="alerta ${unidade.alerta_umidade ? 'vermelho' : 'verde'}">
+                        ${unidade.alerta_umidade ? 'Alerta!' : 'Normal'}
+                    </span></p>
+                    <p><strong>Alerta Luminosidade:</strong> <span class="alerta ${unidade.alerta_luminosidade ? 'vermelho' : 'verde'}">
+                        ${unidade.alerta_luminosidade ? 'Alerta!' : 'Normal'}
+                    </span></p>
+                </div>
+            `;
+            container.appendChild(card);
+        });
+    }
+
+    // Chama a função para buscar as unidades a cada 3 segundos
+    setInterval(fetchUnidades, 3000);
+
+    // Carrega as unidades ao iniciar a página
+    fetchUnidades();
+</script>
+
+</body>
+</html>

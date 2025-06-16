@@ -1,0 +1,4 @@
+npm install express cors body-parser sqlite3
+
+npm install -g http-server
+

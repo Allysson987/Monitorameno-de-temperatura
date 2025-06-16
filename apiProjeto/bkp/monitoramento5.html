@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ClimaGil</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+        header {
+            background-color: #003366;
+            color: white;
+            padding: 10px 0;
+            text-align: center;
+        }
+        header img {
+            height: 130px;
+            margin: 10px;
+        }
+        h1 {
+            margin: 0;
+        }
+        #map {
+            flex: 1;
+            height: 500px; /* Define a altura do mapa */
+            margin-bottom: 100px;
+        }
+        footer {
+            background-color: white;
+            padding: 10px;
+            text-align: center;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+            z-index: 1000;
+        }
+        footer img {
+            height: 77px;
+            margin: 0 15px;
+        }
+        #unitCard {
+            display: none;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 300px;
+            padding: 20px;
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            z-index: 2000;
+        }
+        #unitCard h3 {
+            margin: 0 0 10px;
+        }
+        #unitCard button {
+            margin-top: 10px;
+            padding: 10px;
+            background-color: #003366;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .defined-ranges {
+            margin-top: 20px;
+            font-size: 14px;
+            color: #333;
+        }
+        .alert {
+            color: red;
+            font-weight: bold;
+        }
+        .normal {
+            color: green;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <img src="gil.png" alt="Logo ETE">
+    <h1>ClimaGil</h1>
+</header>
+
+<div id="map"></div>
+
+<footer>
+    <img src="inovagil.png" alt="Logo Inovagil">
+    <img src="qrcode.png" alt="QR Code">
+</footer>
+
+<div id="unitCard">
+    <h3 id="unitName"></h3>
+    <p><strong>Temperatura:</strong> <span id="unitTemp"></span>°C</p>
+    <p><strong>Umidade:</strong> <span id="unitHumidity"></span>%</p>
+    <p><strong>Luminosidade:</strong> <span id="unitLuminosity"></span> lux</p>
+    <p><strong>Alerta Temperatura:</strong> <span id="unitTempAlert"></span></p>
+    <p><strong>Alerta Umidade:</strong> <span id="unitHumidityAlert"></span></p>
+    <p><strong>Alerta Luminosidade:</strong> <span id="unitLuminosityAlert"></span></p>
+    
+    <!-- Faixas definidas -->
+    <div class="defined-ranges">
+        <p><strong>Faixas definidas:</strong></p>
+        <p>Temperatura: 18°C a 32°C</p>
+        <p>Umidade: 40% a 70%</p>
+        <p>Luminosidade: até 10.000 lux</p>
+    </div>
+
+    <button onclick="closeCard()">Voltar ao mapa</button>
+</div>
+
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<script>
+    // Inicializa o mapa e define uma localização padrão
+    const map = L.map('map').setView([0, 0], 2); // Visão inicial global para evitar mapa vazio
+
+    // Adicionando um layer de mapa (OpenStreetMap)
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: 'Map data © OpenStreetMap contributors'
+    }).addTo(map);
+
+    const iconGreen = L.icon({
+        iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png', 
+        iconSize: [25, 41], 
+        iconAnchor: [12, 41], 
+        popupAnchor: [1, -34]
+    });
+
+    const iconRed = L.icon({
+        iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png', 
+        iconSize: [25, 41],
+        iconAnchor: [12, 41],
+        popupAnchor: [1, -34]
+    });
+
+    let markers = [];
+
+    // Função para remover todos os marcadores atuais do mapa
+    function clearMarkers() {
+        markers.forEach(marker => map.removeLayer(marker));
+        markers = [];
+    }
+
+    // Função para centralizar o mapa na primeira unidade carregada
+    function centralizarMapa(unidades) {
+        if (unidades.length > 0) {
+            const primeiraUnidade = unidades[0];
+            map.setView([primeiraUnidade.latitude, primeiraUnidade.longitude], 12); // Centraliza no primeiro marcador
+        }
+    }
+
+    // Função para verificar se está dentro dos parâmetros aceitáveis e retornar a cor correspondente
+    function verificarCor(valor, min, max) {
+        return valor >= min && valor <= max ? 'normal' : 'alert';
+    }
+
+    // Função para obter as unidades da API e adicionar marcadores
+    async function fetchUnidades() {
+        try {
+            const response = await fetch('http://localhost:3000/unidades');
+            const unidades = await response.json();
+            if (unidades.length > 0) {
+                clearMarkers(); // Limpa os marcadores existentes
+                adicionarMarcadores(unidades);
+                centralizarMapa(unidades); // Centraliza o mapa na primeira unidade
+            }
+        } catch (error) {
+            console.error("Erro ao buscar unidades:", error);
+        }
+    }
+
+    // Função para adicionar marcadores no mapa e configurar o popup
+    function adicionarMarcadores(unidades) {
+        unidades.forEach(unidade => {
+            const { latitude, longitude, nome, temperatura, umidade, luminosidade, alerta_temperatura, alerta_umidade, alerta_luminosidade } = unidade;
+
+            const temAlerta = alerta_temperatura || alerta_umidade || alerta_luminosidade;
+            const markerIcon = temAlerta ? iconRed : iconGreen;
+
+            if (latitude && longitude) {
+                const marker = L.marker([latitude, longitude], { icon: markerIcon }).addTo(map);
+                markers.push(marker); // Armazena o marcador para possível remoção
+
+                // Mostrar informações ao passar o mouse
+                marker.on('mouseover', function () {
+                    const popupContent = `
+                        <h3>${nome}</h3>
+                        <p><strong>Temperatura:</strong> <span class="${verificarCor(temperatura, 18, 32)}">${temperatura}°C</span></p>
+                        <p><strong>Umidade:</strong> <span class="${verificarCor(umidade, 40, 70)}">${umidade}%</span></p>
+                        <p><strong>Luminosidade:</strong> <span class="${verificarCor(luminosidade, 0, 10000)}">${luminosidade} lux</span></p>
+                        <button onclick="showCard('${nome}', ${temperatura}, ${umidade}, ${luminosidade}, ${alerta_temperatura}, ${alerta_umidade}, ${alerta_luminosidade})">Mais Detalhes</button>
+                    `;
+                    marker.bindPopup(popupContent).openPopup();
+                });
+            }
+        });
+    }
+
+    // Função que exibe o card com as informações detalhadas da unidade
+    function showCard(nome, temperatura, umidade, luminosidade, alertaTemp, alertaUmid, alertaLum) {
+        document.getElementById('unitName').innerText = nome;
+        document.getElementById('unitTemp').innerText = temperatura;
+        document.getElementById('unitHumidity').innerText = umidade;
+        document.getElementById('unitLuminosity').innerText = luminosidade;
+
+        // Aplica a cor vermelha para "Alerta!" e verde para "Normal"
+        document.getElementById('unitTempAlert').innerHTML = alertaTemp ? '<span class="alert">Alerta!</span>' : '<span class="normal">Normal</span>';
+        document.getElementById('unitHumidityAlert').innerHTML = alertaUmid ? '<span class="alert">Alerta!</span>' : '<span class="normal">Normal</span>';
+        document.getElementById('unitLuminosityAlert').innerHTML = alertaLum ? '<span class="alert">Alerta!</span>' : '<span class="normal">Normal</span>';
+
+        // Exibe o card e oculta o mapa
+        document.getElementById('map').style.display = 'none';
+        document.getElementById('unitCard').style.display = 'block';
+    }
+
+    // Função para fechar o card e voltar ao mapa
+    function closeCard() {
+        document.getElementById('unitCard').style.display = 'none';
+        document.getElementById('map').style.display = 'block';
+    }
+
+    // Chama a função para buscar as unidades e atualizar o mapa a cada 3 segundos
+    fetchUnidades();
+    setInterval(fetchUnidades, 3000);
+
+</script>
+
+</body>
+</html>
