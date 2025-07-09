@@ -14,13 +14,15 @@ Promover o uso da tecnologia no ambiente escolar por meio do **monitoramento em 
 - **JavaScript** – Interações no frontend com os dados.
 - **SQLite3** – Banco de dados local usado para armazenar os registros meteorológicos.
 - **Sensores físicos** – Conectados via microcontroladores (ex: Arduino ou ESP8266/ESP32), responsáveis pela medição dos dados climáticos.
-
+- **Python** -Conexao com FASTAPI e treinar  modelos de previsão utilizando machine-learning
+  
 ## 📊 Funcionalidades
 
 - Coleta de dados meteorológicos com sensores reais:
   - 🌧️ Índice de chuva
   - 🌡️ Temperatura
   - 💧 Umidade relativa do ar
+    
 - Interface web para visualização dos dados em tempo real.
 - Histórico de medições armazenado no banco de dados.
 - Comunicação entre sensores e servidor via serial ou rede local.
@@ -42,7 +44,7 @@ A aplicação conta com um painel acessível via navegador com:
 - Estilo amigável para fácil entendimento por estudantes
 
 ## 🧪 Expansões Futuras
-
+- Previsão em tempo real da possibilidade e quantidade de chuva em determinada localidade
 - Geração de gráficos estatísticos com bibliotecas como Chart.js ou Matplotlib
 - Exportação de dados em CSV ou PDF
 - Envio de alertas automáticos por e-mail ou notificação
@@ -57,4 +59,3 @@ A aplicação conta com um painel acessível via navegador com:
 ---
 
 **Desenvolvido por Estudantes ETelE Gil**  
-Licença: [MIT ou outra, se aplicável]
